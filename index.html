@@ -1,34 +1,396 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculadora de Reagentes</title>
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="container">
-<h1>🧪 Calculadora de Reagentes</h1>
-<input id="nome" placeholder="Nome do reagente">
-<input id="volume" type="number" placeholder="Quantidade">
-<select id="unidade">
-<option value="ml">ml</option>
-<option value="l">litros</option>
-</select>
-<button onclick="adicionarReagente()">Adicionar</button>
-<hr>
-<input id="volumeTotal" type="number" placeholder="Volume total (ml)">
-<button onclick="calcularMistura()">Calcular</button>
-<ul id="resultado"></ul>
-<input id="novoVolume" type="number" placeholder="Novo volume total (ml)">
-<button onclick="recalcular()">Recalcular</button>
-</div>
-<script src="script.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
-}
-</script>
-</body>
+<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Reagentes</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+    .font-main { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app-container" class="h-full overflow-auto" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);">
+   <div class="min-h-full p-6 md:p-8">
+    <div class="max-w-2xl mx-auto"><!-- Header -->
+     <header class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); box-shadow: 0 8px 32px rgba(6, 182, 212, 0.3);">
+       <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+       </svg>
+      </div>
+      <h1 id="app-title" class="font-main text-3xl md:text-4xl font-bold text-white mb-2">Calculadora de Reagentes</h1>
+      <p class="font-main text-slate-400 text-sm">Defina seus reagentes e calcule proporções automaticamente</p>
+     </header><!-- Volume Total Card -->
+     <div class="rounded-2xl p-6 mb-6" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);"><label class="font-main text-sm font-medium text-cyan-400 mb-3 block">Volume Total da Mistura</label>
+      <div class="flex gap-3"><input type="number" id="total-volume" min="0" step="0.1" value="1000" class="font-mono flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all" placeholder="1000"> <select id="total-unit" class="font-main bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-all cursor-pointer"> <option value="ml">mL</option> <option value="L">L</option> </select>
+      </div>
+     </div><!-- Reagents Section -->
+     <div class="rounded-2xl p-6 mb-6" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);">
+      <div class="flex items-center justify-between mb-4">
+       <h2 class="font-main text-lg font-semibold text-white">Reagentes</h2><button id="add-reagent-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-main font-medium text-sm transition-all hover:scale-105 active:scale-95" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; box-shadow: 0 4px 16px rgba(6, 182, 212, 0.3);">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg> Adicionar </button>
+      </div>
+      <div id="reagents-list" class="space-y-3"><!-- Reagents will be added here -->
+      </div>
+      <p id="empty-message" class="font-main text-slate-500 text-center py-8 hidden">Clique em "Adicionar" para incluir reagentes</p>
+     </div><!-- Results Section -->
+     <div class="rounded-2xl p-6" style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);">
+      <h2 class="font-main text-lg font-semibold text-white mb-4">Resultado da Mistura</h2>
+      <div id="results-container"><!-- Water Result -->
+       <div id="water-result" class="flex items-center justify-between p-4 rounded-xl mb-3" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%); border: 1px solid rgba(59, 130, 246, 0.3);">
+        <div class="flex items-center gap-3">
+         <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(59, 130, 246, 0.3);">
+          <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewbox="0 0 24 24"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.35 0-6-2.57-6-6.2 0-2.34 1.95-5.44 6-9.14 4.05 3.7 6 6.79 6 9.14 0 3.63-2.65 6.2-6 6.2z" />
+          </svg>
+         </div>
+         <div>
+          <p id="water-label" class="font-main font-medium text-blue-300">Água</p>
+          <p id="water-proportion" class="font-mono text-xs text-blue-400/70">0%</p>
+         </div>
+        </div>
+        <p id="water-amount" class="font-mono text-xl font-semibold text-blue-300">0 mL</p>
+       </div><!-- Reagents Results -->
+       <div id="reagents-results" class="space-y-2"><!-- Results will be added here -->
+       </div><!-- Total -->
+       <div class="flex items-center justify-between p-4 rounded-xl mt-4" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(8, 145, 178, 0.1) 100%); border: 1px solid rgba(6, 182, 212, 0.3);">
+        <p class="font-main font-semibold text-cyan-300">Volume Total</p>
+        <p id="total-result" class="font-mono text-xl font-bold text-cyan-300">0 mL</p>
+       </div>
+      </div><!-- Warning Message -->
+      <div id="warning-message" class="hidden mt-4 p-4 rounded-xl" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+       <p class="font-main text-red-400 text-sm flex items-center gap-2">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg><span id="warning-text">Os reagentes excedem o volume total!</span></p>
+      </div>
+     </div><!-- Instructions -->
+     <div class="mt-6 p-4 rounded-xl" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+      <p class="font-main text-slate-500 text-xs text-center">💡 As proporções são mantidas automaticamente ao alterar o volume total</p>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // State management
+    let reagents = [];
+    let proportions = null; // Stores { reagentId: proportion, water: proportion }
+    let reagentIdCounter = 0;
+
+    // Default configuration
+    const defaultConfig = {
+      app_title: 'Calculadora de Reagentes',
+      water_label: 'Água',
+      background_color: '#0f172a',
+      accent_color: '#06b6d4',
+      text_color: '#ffffff',
+      surface_color: 'rgba(255,255,255,0.05)',
+      font_family: 'Space Grotesk',
+      font_size: 16
+    };
+
+    // DOM Elements
+    const totalVolumeInput = document.getElementById('total-volume');
+    const totalUnitSelect = document.getElementById('total-unit');
+    const reagentsList = document.getElementById('reagents-list');
+    const emptyMessage = document.getElementById('empty-message');
+    const addReagentBtn = document.getElementById('add-reagent-btn');
+    const waterAmountEl = document.getElementById('water-amount');
+    const waterProportionEl = document.getElementById('water-proportion');
+    const waterLabelEl = document.getElementById('water-label');
+    const reagentsResults = document.getElementById('reagents-results');
+    const totalResultEl = document.getElementById('total-result');
+    const warningMessage = document.getElementById('warning-message');
+    const appTitleEl = document.getElementById('app-title');
+
+    // Convert to mL
+    function toMl(value, unit) {
+      return unit === 'L' ? value * 1000 : value;
+    }
+
+    // Convert from mL
+    function fromMl(ml, unit) {
+      return unit === 'L' ? ml / 1000 : ml;
+    }
+
+    // Format volume with unit
+    function formatVolume(ml, targetUnit) {
+      const value = fromMl(ml, targetUnit);
+      if (targetUnit === 'L') {
+        return `${value.toFixed(3)} L`;
+      }
+      return `${value.toFixed(1)} mL`;
+    }
+
+    // Calculate and update results
+    function calculateResults() {
+      const totalUnit = totalUnitSelect.value;
+      const totalVolumeMl = toMl(parseFloat(totalVolumeInput.value) || 0, totalUnit);
+      
+      // Calculate total reagents volume
+      let totalReagentsMl = 0;
+      reagents.forEach(r => {
+        totalReagentsMl += toMl(r.amount, r.unit);
+      });
+
+      // If proportions are locked, adjust all values
+      if (proportions && totalVolumeMl > 0) {
+        // Recalculate based on proportions
+        reagents.forEach(r => {
+          const newAmountMl = totalVolumeMl * proportions[r.id];
+          r.amount = fromMl(newAmountMl, r.unit);
+          // Update input field
+          const input = document.querySelector(`#reagent-${r.id} .reagent-amount`);
+          if (input) {
+            input.value = r.amount.toFixed(r.unit === 'L' ? 3 : 1);
+          }
+        });
+        
+        // Recalculate total reagents
+        totalReagentsMl = 0;
+        reagents.forEach(r => {
+          totalReagentsMl += toMl(r.amount, r.unit);
+        });
+      }
+
+      const waterMl = Math.max(0, totalVolumeMl - totalReagentsMl);
+      const showWarning = totalReagentsMl > totalVolumeMl && totalVolumeMl > 0;
+
+      // Update water display
+      waterAmountEl.textContent = formatVolume(waterMl, totalUnit);
+      const waterPercent = totalVolumeMl > 0 ? ((waterMl / totalVolumeMl) * 100).toFixed(1) : 0;
+      waterProportionEl.textContent = `${waterPercent}%`;
+
+      // Update reagents results
+      reagentsResults.innerHTML = '';
+      reagents.forEach(r => {
+        const amountMl = toMl(r.amount, r.unit);
+        const percent = totalVolumeMl > 0 ? ((amountMl / totalVolumeMl) * 100).toFixed(1) : 0;
+        
+        const resultEl = document.createElement('div');
+        resultEl.className = 'flex items-center justify-between p-3 rounded-xl';
+        resultEl.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);';
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: ${r.color}20;">
+              <div class="w-3 h-3 rounded-full" style="background: ${r.color};"></div>
+            </div>
+            <div>
+              <p class="font-main font-medium text-slate-300 text-sm">${r.name}</p>
+              <p class="font-mono text-xs text-slate-500">${percent}%</p>
+            </div>
+          </div>
+          <p class="font-mono text-slate-300">${formatVolume(amountMl, totalUnit)}</p>
+        `;
+        reagentsResults.appendChild(resultEl);
+      });
+
+      // Update total
+      totalResultEl.textContent = formatVolume(totalVolumeMl, totalUnit);
+
+      // Show/hide warning
+      if (showWarning) {
+        warningMessage.classList.remove('hidden');
+      } else {
+        warningMessage.classList.add('hidden');
+      }
+
+      // Update empty message
+      if (reagents.length === 0) {
+        emptyMessage.classList.remove('hidden');
+      } else {
+        emptyMessage.classList.add('hidden');
+      }
+    }
+
+    // Lock proportions based on current state
+    function lockProportions() {
+      const totalUnit = totalUnitSelect.value;
+      const totalVolumeMl = toMl(parseFloat(totalVolumeInput.value) || 0, totalUnit);
+      
+      if (totalVolumeMl <= 0) {
+        proportions = null;
+        return;
+      }
+
+      proportions = {};
+      reagents.forEach(r => {
+        const amountMl = toMl(r.amount, r.unit);
+        proportions[r.id] = amountMl / totalVolumeMl;
+      });
+
+      // Calculate water proportion
+      let totalReagentsProp = 0;
+      Object.values(proportions).forEach(p => totalReagentsProp += p);
+      proportions.water = Math.max(0, 1 - totalReagentsProp);
+    }
+
+    // Generate random color
+    function getRandomColor() {
+      const colors = ['#f43f5e', '#ec4899', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#22d3ee', '#10b981', '#84cc16', '#eab308', '#f97316'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Create reagent element
+    function createReagentElement(reagent) {
+      const div = document.createElement('div');
+      div.id = `reagent-${reagent.id}`;
+      div.className = 'flex items-center gap-3 p-3 rounded-xl transition-all';
+      div.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);';
+      
+      div.innerHTML = `
+        <div class="w-3 h-3 rounded-full flex-shrink-0" style="background: ${reagent.color};"></div>
+        <input type="text" value="${reagent.name}" placeholder="Nome do reagente"
+          class="reagent-name font-main flex-1 min-w-0 bg-transparent border-none text-white text-sm focus:outline-none placeholder-slate-600">
+        <input type="number" value="${reagent.amount}" min="0" step="0.1"
+          class="reagent-amount font-mono w-24 bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-400 transition-all">
+        <select class="reagent-unit font-main bg-slate-800/50 border border-slate-600 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-cyan-400 cursor-pointer">
+          <option value="ml" ${reagent.unit === 'ml' ? 'selected' : ''}>mL</option>
+          <option value="L" ${reagent.unit === 'L' ? 'selected' : ''}>L</option>
+        </select>
+        <button class="delete-reagent w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      `;
+
+      // Event listeners
+      const nameInput = div.querySelector('.reagent-name');
+      const amountInput = div.querySelector('.reagent-amount');
+      const unitSelect = div.querySelector('.reagent-unit');
+      const deleteBtn = div.querySelector('.delete-reagent');
+
+      nameInput.addEventListener('input', (e) => {
+        reagent.name = e.target.value || 'Reagente';
+        calculateResults();
+      });
+
+      amountInput.addEventListener('input', (e) => {
+        reagent.amount = parseFloat(e.target.value) || 0;
+        proportions = null; // Reset proportions when manually changing
+        lockProportions(); // Re-lock with new values
+        calculateResults();
+      });
+
+      unitSelect.addEventListener('change', (e) => {
+        // Convert amount to new unit
+        const oldAmountMl = toMl(reagent.amount, reagent.unit);
+        reagent.unit = e.target.value;
+        reagent.amount = fromMl(oldAmountMl, reagent.unit);
+        amountInput.value = reagent.amount.toFixed(reagent.unit === 'L' ? 3 : 1);
+        calculateResults();
+      });
+
+      deleteBtn.addEventListener('click', () => {
+        reagents = reagents.filter(r => r.id !== reagent.id);
+        div.remove();
+        proportions = null;
+        lockProportions();
+        calculateResults();
+      });
+
+      return div;
+    }
+
+    // Add new reagent
+    function addReagent() {
+      const reagent = {
+        id: reagentIdCounter++,
+        name: `Reagente ${reagents.length + 1}`,
+        amount: 100,
+        unit: 'ml',
+        color: getRandomColor()
+      };
+      
+      reagents.push(reagent);
+      reagentsList.appendChild(createReagentElement(reagent));
+      
+      proportions = null;
+      lockProportions();
+      calculateResults();
+    }
+
+    // Event listeners
+    addReagentBtn.addEventListener('click', addReagent);
+
+    totalVolumeInput.addEventListener('input', () => {
+      calculateResults();
+    });
+
+    totalUnitSelect.addEventListener('change', () => {
+      calculateResults();
+    });
+
+    // Element SDK Integration
+    const elementConfig = {
+      defaultConfig,
+      onConfigChange: async (config) => {
+        const title = config.app_title || defaultConfig.app_title;
+        const waterLabel = config.water_label || defaultConfig.water_label;
+        const fontFamily = config.font_family || defaultConfig.font_family;
+        const fontSize = config.font_size || defaultConfig.font_size;
+        const bgColor = config.background_color || defaultConfig.background_color;
+        const accentColor = config.accent_color || defaultConfig.accent_color;
+        const textColor = config.text_color || defaultConfig.text_color;
+
+        appTitleEl.textContent = title;
+        waterLabelEl.textContent = waterLabel;
+
+        // Apply font
+        document.querySelectorAll('.font-main').forEach(el => {
+          el.style.fontFamily = `${fontFamily}, sans-serif`;
+        });
+
+        // Apply colors
+        document.body.style.setProperty('--bg-color', bgColor);
+        document.body.style.setProperty('--accent-color', accentColor);
+        document.body.style.setProperty('--text-color', textColor);
+      },
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => { config.background_color = value; window.elementSdk.setConfig({ background_color: value }); }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => { config.accent_color = value; window.elementSdk.setConfig({ accent_color: value }); }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => { config.text_color = value; window.elementSdk.setConfig({ text_color: value }); }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (value) => { config.font_family = value; window.elementSdk.setConfig({ font_family: value }); }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (value) => { config.font_size = value; window.elementSdk.setConfig({ font_size: value }); }
+        }
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['app_title', config.app_title || defaultConfig.app_title],
+        ['water_label', config.water_label || defaultConfig.water_label]
+      ])
+    };
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init(elementConfig);
+    }
+
+    // Initial calculation
+    calculateResults();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d072f8a61db566f',t:'MTc3MTUxOTAxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
