@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Reagentes</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+<h1>🧪 Calculadora de Reagentes</h1>
+<input id="nome" placeholder="Nome do reagente">
+<input id="volume" type="number" placeholder="Quantidade">
+<select id="unidade">
+<option value="ml">ml</option>
+<option value="l">litros</option>
+</select>
+<button onclick="adicionarReagente()">Adicionar</button>
+<hr>
+<input id="volumeTotal" type="number" placeholder="Volume total (ml)">
+<button onclick="calcularMistura()">Calcular</button>
+<ul id="resultado"></ul>
+<input id="novoVolume" type="number" placeholder="Novo volume total (ml)">
+<button onclick="recalcular()">Recalcular</button>
+</div>
+<script src="script.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</body>
+</html>
